@@ -1,236 +1,234 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <title>EF Tracker - 1 ngày làm việc</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #0f172a;
-      color: #e5e7eb;
-      padding: 20px;
-    }
-
-    h1 {
-      margin-bottom: 10px;
-    }
-
-    .add-box {
-      background: #1e293b;
-      padding: 12px;
-      border-radius: 10px;
-      margin-bottom: 20px;
-      display: flex;
-      gap: 10px;
-    }
-
-    input {
-      padding: 6px;
-      border-radius: 6px;
-      border: 1px solid #475569;
-      background: #020617;
-      color: white;
-    }
-
-    button {
-      padding: 6px 12px;
-      border-radius: 6px;
-      background: #0284c7;
-      border: none;
-      cursor: pointer;
-      color: white;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 15px;
-    }
-
-    .card {
-      background: #1e293b;
-      padding: 12px;
-      border-radius: 10px;
-      border: 1px solid #334155;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .timer {
-      background: #020617;
-      padding: 8px;
-      border-radius: 8px;
-      text-align: center;
-      font-size: 24px;
-      font-family: monospace;
-      border: 1px solid #0a0f23;
-    }
-
-    .controls {
-      display: flex;
-      gap: 10px;
-    }
-
-    .small {
-      transform: scale(0.85);
-      color: #f97316;
-    }
-
-    .overtime {
-      color: #22c55e;
-    }
-  </style>
+<meta charset="UTF-8"/>
+<title>EF Tracker Pro</title>
+<style>
+  body { font-family:Arial;background:#0f172a;color:#fff;padding:20px;}
+  .project { background:#1e293b;padding:15px;border-radius:10px;margin-bottom:12px;}
+  .timer { background:#020617;padding:10px;border-radius:10px;text-align:center;font-size:28px;font-family:monospace;margin:10px 0;}
+  .controls button,.task-actions button {
+     padding:6px 10px;border-radius:6px;border:none;cursor:pointer;margin-right:6px;
+  }
+  .controls button{background:#0284c7;color:white;}
+  .task-list {margin-top:10px;background:#0f172a;padding:10px;border-radius:10px;font-size:14px;}
+  img.logo {width:24px;height:24px;border-radius:50%;vertical-align:middle;margin-right:6px;}
+  .del {background:#ef4444;color:white;}
+  .addbox input {padding:6px;margin-right:8px;}
+</style>
 </head>
 <body>
 
-<h1>EF Tracker</h1>
+<h2>EF Tracker Pro</h2>
+<div id="today"></div>
 
-<!-- UI thêm project -->
-<div class="add-box">
-  <input id="projName" placeholder="Tên dự án">
-  <input id="projPercent" type="number" placeholder="% EF (vd: 30)">
-  <button onclick="addProject()">Thêm / Cập nhật</button>
+<!-- Add project UI -->
+<div class="addbox">
+  <input id="pname" placeholder="Project"/>
+  <input id="palloc" placeholder="% EF"/>
+  <input id="plogo" type="file" accept="image/*"/>
+  <button onclick="addProject()">Add Project</button>
 </div>
 
-<div class="grid" id="projectArea"></div>
+<div id="projects"></div>
+
+<button onclick="exportCSV()">Export Report</button>
 
 <script>
-  const BASE_SECONDS = 8 * 60 * 60;
-  let projects = [];
+const BASE_SECONDS = 8*60*60;
+let activeProject = null;
 
-  function format(sec){
-    sec = Math.max(0, Math.round(sec));
-    let h = Math.floor(sec/3600);
-    let m = Math.floor((sec%3600)/60);
-    let s = sec%60;
-    return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
-  }
+let data = loadData();
 
-  function render(){
-    const container = document.getElementById("projectArea");
-    container.innerHTML = "";
+function loadData(){
+  return JSON.parse(localStorage.getItem("EF_DATA")||"[]");
+}
+function saveData(){
+  localStorage.setItem("EF_DATA",JSON.stringify(data));
+}
 
-    if(projects.length===0) return;
+document.getElementById("today").innerText = 
+      "Today: "+ new Date().toLocaleDateString("vi-VN");
 
-    let min = Math.min(...projects.map(p=>p.remainingSeconds));
+function format(sec){
+  sec=Math.max(0,sec);
+  let h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),s=sec%60;
+  return [h,m,s].map(x=>String(x).padStart(2,"0")).join(":");
+}
 
-    projects.forEach(p=>{
-      let card=document.createElement("div");
-      card.className="card";
+function render(){
+  let box=document.getElementById("projects");
+  box.innerHTML="";
+  data.forEach(p=>{
+    let d=document.createElement("div");
+    d.className="project";
 
-      let title=document.createElement("div");
-      title.textContent = `${p.name} (${p.allocation}% của 8h)`;
+    let title=document.createElement("div");
+    title.innerHTML = `<img class="logo" src="${p.logo}">
+      ${p.name} (${p.allocation}% của 8h)`;
 
-      let timer=document.createElement("div");
-      timer.className="timer";
-      timer.textContent = format(p.remainingSeconds);
+    let t=document.createElement("div");
+    t.className="timer";
+    t.textContent = format(p.remainingSeconds);
 
-      if(p.remainingSeconds === min) timer.classList.add("small");
-      if(p.totalSeconds > p.allocatedSeconds) timer.classList.add("overtime");
+    let ctr=document.createElement("div");
+    ctr.className="controls";
+    let start=document.createElement("button");
+    start.textContent="Start";
+    start.onclick=()=>startProject(p.id);
 
-      let ctrls=document.createElement("div");
-      ctrls.className="controls";
+    let del=document.createElement("button");
+    del.textContent="X";
+    del.className="del";
+    del.onclick=()=>deleteProject(p.id);
 
-      let btnStart=document.createElement("button");
-      btnStart.textContent = p.running ? "Pause" : "Start";
-      btnStart.onclick = ()=>toggle(p.name);
+    ctr.appendChild(start);
+    ctr.appendChild(del);
 
-      let btnOT=document.createElement("button");
-      btnOT.textContent = "+ OT";
-      btnOT.onclick = ()=>addOT(p.name);
+    let taskUI=document.createElement("div");
+    taskUI.className="task-list";
 
-      ctrls.appendChild(btnStart);
-      ctrls.appendChild(btnOT);
+    // add task form
+    let input=document.createElement("div");
+    input.innerHTML = `
+      <input id="task_${p.id}" placeholder="Task name"/>
+      <input id="est_${p.id}" placeholder="Est min" style="width:70px"/>
+      <button onclick="addTask('${p.id}')">+</button>
+    `;
+    taskUI.appendChild(input);
 
-      card.appendChild(title);
-      card.appendChild(timer);
-      card.appendChild(ctrls);
-
-      container.appendChild(card);
+    // task list
+    p.tasks.forEach(tk=>{
+      let row=document.createElement("div");
+      row.innerHTML=`- ${tk.name} (Est ${Math.round(tk.effEst/60)}m, Actual ${Math.round(tk.effActual/60)}m)`;
+      let bx=document.createElement("button");
+      bx.textContent="x";
+      bx.className="del";
+      bx.onclick=()=>delTask(p.id,tk.id);
+      row.appendChild(bx);
+      taskUI.appendChild(row);
     });
-  }
 
-  function addProject(){
-    let name=document.getElementById("projName").value.trim();
-    let percent=parseFloat(document.getElementById("projPercent").value);
+    d.appendChild(title);
+    d.appendChild(t);
+    d.appendChild(ctr);
+    d.appendChild(taskUI);
 
-    if(!name||isNaN(percent)||percent<=0){ alert("Nhập đúng tên & %"); return;}
+    box.appendChild(d);
+  });
+}
 
-    let sec = (percent/100)*BASE_SECONDS;
+async function imgToBase64(file){
+  return new Promise(res=>{
+    const reader=new FileReader();
+    reader.onload=e=>res(e.target.result);
+    reader.readAsDataURL(file);
+  });
+}
 
-    let existing = projects.find(p=>p.name.toLowerCase()===name.toLowerCase());
+async function addProject(){
+  let name=document.getElementById("pname").value.trim();
+  let alloc=parseFloat(document.getElementById("palloc").value);
+  let file=document.getElementById("plogo").files[0];
 
-    if(existing){
-      existing.totalSeconds += sec;
-      existing.remainingSeconds += sec;
-      existing.allocatedSeconds += sec;
+  if(!name||isNaN(alloc)){ alert("Name & % required"); return;}
+
+  let sec=(alloc/100)*BASE_SECONDS;
+
+  let base64=file?await imgToBase64(file):"";
+
+  let p={
+    id:Date.now()+"",
+    name,
+    allocation:alloc,
+    allocatedSeconds:sec,
+    totalSeconds:sec,
+    remainingSeconds:sec,
+    logo:base64,
+    tasks:[]
+  };
+  data.push(p);
+  saveData();
+  render();
+}
+
+function startProject(id){
+  data.forEach(p=>{
+    if(p.id===id){
+      activeProject=id;
+      p._last = Date.now();
     } else {
-      projects.push({
-        name,
-        allocation:percent,
-        allocatedSeconds:sec,
-        totalSeconds:sec,
-        remainingSeconds:sec,
-        running:false,
-        lastTick:null
-      });
+      p._last=null;
     }
+  });
+  render();
+}
 
-    document.getElementById("projName").value="";
-    document.getElementById("projPercent").value="";
-    render();
+function deleteProject(id){
+  data=data.filter(p=>p.id!==id);
+  saveData();
+  render();
+}
+
+function addTask(pid){
+  let name=document.getElementById("task_"+pid).value.trim();
+  let m=parseFloat(document.getElementById("est_"+pid).value);
+  if(!name||isNaN(m)) return;
+
+  let p=data.find(x=>x.id===pid);
+  p.tasks.push({
+    id:Date.now()+"",
+    name,
+    effEst:m*60,
+    effActual:0
+  });
+  saveData();
+  render();
+}
+function delTask(pid,tid){
+  let p=data.find(x=>x.id===pid);
+  p.tasks=p.tasks.filter(t=>t.id!==tid);
+  saveData();
+  render();
+}
+
+// Timer tick + distribute actual effort
+setInterval(()=>{
+  if(!activeProject) return;
+  let now=Date.now();
+  let p=data.find(x=>x.id===activeProject);
+  if(!p||!p._last) return;
+  let diff=(now-p._last)/1000;
+  p._last=now;
+  p.remainingSeconds-=diff;
+  if(p.remainingSeconds<0) p.remainingSeconds=0;
+
+  // distribute effort actual to tasks (simple rule: last task updated is active)
+  if(p.tasks.length>0){
+     let tk=p.tasks[p.tasks.length-1];
+     tk.effActual+=diff;
   }
+  saveData();
+  render();
+},1000);
 
-  function toggle(name){
-    let now=Date.now();
-    projects.forEach(p=>{
-      if(p.name===name){
-        p.running=!p.running;
-        p.lastTick=now;
-      } else {
-        p.running=false;
-      }
+// CSV export
+function exportCSV(){
+  let rows=["Project,Task,Formal/OT,Est(min),Actual(min)"];
+  data.forEach(p=>{
+    p.tasks.forEach(t=>{
+      let formal = p.totalSeconds>p.allocatedSeconds?"OT":"Formal";
+      rows.push(
+        `${p.name},${t.name},${formal},${Math.round(t.effEst/60)},${Math.round(t.effActual/60)}`
+      );
     });
-    render();
-  }
-
-  function addOT(name){
-    let min=prompt("Cộng thêm bao nhiêu phút OT?", "30");
-    if(min===null) return;
-    min=parseFloat(min);
-    if(isNaN(min)||min<=0) return;
-    
-    let add=min*60;
-    let p=projects.find(p=>p.name===name);
-    p.totalSeconds+=add;
-    p.remainingSeconds+=add;
-    render();
-  }
-
-  setInterval(()=>{
-    let now=Date.now();
-    let changed=false;
-
-    projects.forEach(p=>{
-      if(p.running && p.remainingSeconds>0){
-        let delta=(now - (p.lastTick||now))/1000;
-        if(delta>=0.5){
-          p.remainingSeconds-=delta;
-          p.lastTick=now;
-          if(p.remainingSeconds<=0){
-            alert(`Project ${p.name} đã hết giờ!`)
-            p.remainingSeconds=0;
-            p.running=false;
-          }
-          changed=true;
-        }
-      }
-    });
-
-    if(changed) render();
-  },500);
-
+  });
+  let blob=new Blob([rows.join("\n")],{type:"text/csv"});
+  let url=URL.createObjectURL(blob);
+  let a=document.createElement("a");
+  a.href=url;a.download="ef_report.csv";a.click();
+}
+render();
 </script>
 </body>
 </html>

@@ -1,456 +1,871 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-<meta charset="UTF-8">
-<title>EF Tracker – Spotify Mode</title>
-
-<style>
-/* ---------- Spotify Theme ---------- */
-:root {
-  --spotify-green: #1DB954;
-  --bg-dark: #0B0B0B;
-  --bg-card: #121212;
-  --text-light: #F2F2F2;
-  --text-muted: #9DA0A6;
-  --danger: #ff4d4d;
-  --radius: 14px;
-  --shadow: 0 10px 25px rgba(0,0,0,0.6);
-}
-
-body {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  background: var(--bg-dark);
-  color: var(--text-light);
-  padding: 20px;
-  display: flex;
-  justify-content: center;
-}
-
-.app {
-  width: 100%;
-  max-width: 880px;
-}
-
-h1 {
-  font-size: 22px;
-  font-weight: 600;
-  color: var(--spotify-green);
-  margin-bottom: 6px;
-}
-
-.subtitle {
-  font-size: 13px;
-  color: var(--text-muted);
-  margin-bottom: 18px;
-}
-
-/* Add Project UI */
-.add-row {
-  display: grid;
-  grid-template-columns: 1fr 100px 140px auto;
-  gap: 8px;
-  background: var(--bg-card);
-  padding: 10px 14px;
-  border-radius: var(--radius);
-  margin-bottom: 16px;
-}
-
-input, .file-label {
-  background: black;
-  border: 1px solid #333;
-  border-radius: var(--radius);
-  padding: 7px 10px;
-  font-size: 13px;
-  color: var(--text-light);
-}
-
-.file-label {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  cursor: pointer;
-}
-
-input[type=file] { display:none; }
-
-/* Buttons */
-button {
-  border: none;
-  padding: 7px 13px;
-  border-radius: var(--radius);
-  cursor: pointer;
-  font-size: 13px;
-}
-
-.btn-green {
-  background: var(--spotify-green);
-  color: #000;
-}
-.btn-dark {
-  background: #222;
-  color: var(--text-light);
-}
-.btn-red {
-  background: var(--danger);
-  color: #000;
-}
-.btn-pause {
-  background: #111;
-  border: 1px solid var(--spotify-green);
-  color: var(--spotify-green);
-}
-
-/* Cards */
-.project {
-  background: var(--bg-card);
-  border-radius: var(--radius);
-  padding: 14px;
-  margin-bottom: 12px;
-  box-shadow: var(--shadow);
-}
-
-.header {
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-}
-
-.logo {
-  width:28px;
-  height:28px;
-  border-radius:50%;
-  overflow:hidden;
-  border:1px solid #333;
-}
-
-.logo img { width:100%; height:100%; object-fit:cover; }
-
-.pname { font-size:14px; font-weight:600; }
-
-.timer {
-  margin-top: 6px;
-  padding: 6px;
-  text-align:center;
-  font-size:28px;
-  background:black;
-  border-radius: var(--radius);
-  font-family: monospace;
-  letter-spacing: 0.1em;
-}
-
-/* Tasks */
-.task-box {
-  background:#171717;
-  border-radius:var(--radius);
-  margin-top:10px;
-  padding:8px;
-}
-
-.task-row {
-  display:flex;
-  justify-content:space-between;
-  font-size:12px;
-  padding:4px 0;
-  border-bottom:1px solid #222;
-}
-.task-row:last-child { border:none; }
-
-/* Pause buttons Row */
-.pausebar {
-  display:flex;
-  justify-content:center;
-  gap:10px;
-  margin-bottom:20px;
-}
-</style>
-</head>
-
-<body>
-<div class="app">
-  <h1>EF Tracker – Spotify Mode</h1>
-  <div class="subtitle">Focus timer with tasks, pause logging, CSV report.</div>
-  <div id="today" class="subtitle"></div>
-
-  <!-- Pause Buttons -->
-  <div class="pausebar">
-    <button class="btn-pause" onclick="startPause('Lunch')">🍽 Lunch</button>
-    <button class="btn-pause" onclick="startPause('Bathroom')">🚻 Bathroom</button>
-    <button class="btn-pause" onclick="startPause('Personal')">🕘 Personal</button>
-  </div>
-
-  <!-- Add project UI -->
-  <div class="add-row">
-    <input id="pname" placeholder="Tên dự án" />
-    <input id="palloc" type="number" placeholder="%EF" />
-    <label class="file-label">Logo
-      <input id="plogo" type="file" accept="image/*" />
-    </label>
-    <button class="btn-green" onclick="addProject()">+ Add</button>
-  </div>
-
-  <!-- Projects -->
-  <div id="projects"></div>
-
-  <!-- Export -->
-  <button class="btn-dark" onclick="exportCSV()">📎 Export CSV Report</button>
-</div>
-
-<script>
-/* ---------- GLOBAL STATE ---------- */
-let BASE_SECONDS = 8 * 60 * 60;
-let activeProjectId = null;
-
-let data = JSON.parse(localStorage.getItem("EF_DATA_SPOT") || "[]");
-let pauseLogs = JSON.parse(localStorage.getItem("EF_PAUSE_LOGS") || "[]");
-let activePause = null;
-
-function saveData(){ localStorage.setItem("EF_DATA_SPOT", JSON.stringify(data)); }
-function savePauseLogs(){ localStorage.setItem("EF_PAUSE_LOGS", JSON.stringify(pauseLogs)); }
-
-/* ---------- UTIL ---------- */
-document.getElementById("today").textContent =
-  "Today: " + new Date().toLocaleDateString("vi-VN");
-
-function fmt(sec){
-  sec = Math.max(0, sec);
-  let h = Math.floor(sec/3600),
-      m = Math.floor((sec%3600)/60),
-      s = Math.floor(sec%60);
-  return [h,m,s].map(v=>String(v).padStart(2,"0")).join(":");
-}
-
-/* ---------- ADD PROJECT ---------- */
-async function fileToBase64(file){
-  return new Promise(res=>{
-    let r = new FileReader();
-    r.onload = e=>res(e.target.result);
-    r.readAsDataURL(file);
-  });
-}
-
-async function addProject(){
-  let name=document.getElementById("pname").value.trim();
-  let alloc=parseFloat(document.getElementById("palloc").value);
-  let logoInput=document.getElementById("plogo").files[0];
-
-  if(!name || isNaN(alloc)){ alert("Nhập tên và % EF"); return;}
-
-  let sec = (alloc/100)*BASE_SECONDS;
-  let base64 = "";
-  if(logoInput) base64 = await fileToBase64(logoInput);
-
-  data.push({
-    id:crypto.randomUUID(),
-    name,
-    allocation:alloc,
-    totalSeconds:sec,
-    remainingSeconds:sec,
-    logo:base64,
-    tasks:[],
-    _lastTick:null
-  });
-
-  saveData();
-  render();
-}
-
-/* ---------- START PROJECT ---------- */
-function startProject(id){
-  // nếu đang trong pause → log pause trước
-  if(activePause){
-    let now=Date.now();
-    let dur=(now-activePause.start)/1000;
-    pauseLogs.push({
-      id:crypto.randomUUID(),
-      type:activePause.type,
-      start:new Date(activePause.start),
-      end:new Date(now),
-      durationSec:dur,
-      date: new Date().toISOString().split("T")[0]
-    });
-    activePause=null;
-    savePauseLogs();
-  }
-
-  let now2=Date.now();
-  activeProjectId=id;
-  data.forEach(p=>{
-    if(p.id===id) p._lastTick=now2;
-    else p._lastTick=null;
-  });
-  saveData();
-  render();
-}
-
-/* ---------- DELETE PROJECT ---------- */
-function deleteProject(id){
-  if(!confirm("Xóa toàn bộ project?")) return;
-  data=data.filter(p=>p.id!==id);
-  if(activeProjectId===id) activeProjectId=null;
-  saveData();
-  render();
-}
-
-/* ---------- ADD TASK ---------- */
-function addTask(pid){
-  let name=document.getElementById(`task_${pid}`).value.trim();
-  let est=parseFloat(document.getElementById(`est_${pid}`).value);
-  if(!name || isNaN(est)) return;
-
-  let pr=data.find(p=>p.id===pid);
-  pr.tasks.push({
-    id:crypto.randomUUID(),
-    name,
-    effEst:est*60,
-    effActual:0
-  });
-  saveData();
-  render();
-}
-
-/* ---------- DELETE TASK ---------- */
-function deleteTask(pid,tid){
-  let p=data.find(p=>p.id===pid);
-  p.tasks=p.tasks.filter(t=>t.id!==tid);
-  saveData();
-  render();
-}
-
-/* ---------- PAUSE LOGGING ---------- */
-function startPause(type){
-  activeProjectId=null;
-  data.forEach(p=>p._lastTick=null);
-
-  activePause={
-    type,
-    start:Date.now()
-  };
-  alert(type + " pause started");
-}
-
-/* ---------- TIMER LOOP ---------- */
-setInterval(()=>{
-  if(!activeProjectId) return;
-  let now=Date.now();
-  let p=data.find(x=>x.id===activeProjectId);
-  if(!p||!p._lastTick) return;
-  let diff=(now-p._lastTick)/1000;
-  p._lastTick=now;
-  p.remainingSeconds-=diff;
-  if(p.remainingSeconds<0) p.remainingSeconds=0;
-
-  // allocate to active task (last task)
-  if(p.tasks.length){
-    p.tasks[p.tasks.length-1].effActual+=diff;
-  }
-  saveData();
-  render();
-},1000);
-
-/* ---------- EXPORT CSV ---------- */
-function exportCSV(){
-  let rows=["Project,Task,Type,Est(m),Actual(m)"];
-
-  data.forEach(p=>{
-    let type=p.totalSeconds>p.allocatedSeconds?"OT":"Formal";
-    if(p.tasks.length){
-      p.tasks.forEach(t=>{
-        rows.push(`${p.name},${t.name},${type},${Math.round(t.effEst/60)},${Math.round(t.effActual/60)}`);
-      });
-    } else {
-      rows.push(`${p.name},(no task),${type},0,${Math.round((p.totalSeconds-p.remainingSeconds)/60)}`);
+  <meta charset="UTF-8">
+  <title>EF Tracker – Spotify Mode</title>
+  <style>
+    :root {
+      --spotify-green: #1DB954;
+      --bg-dark: #050505;
+      --bg-card: #121212;
+      --bg-input: #000000;
+      --text-main: #F9FAFB;
+      --text-muted: #9CA3AF;
+      --danger: #F97373;
+      --radius: 14px;
+      --shadow: 0 14px 35px rgba(0,0,0,0.7);
     }
-  });
 
-  rows.push("");
-  rows.push("Pause Logs");
-  pauseLogs.forEach(l=>{
-    rows.push(`PAUSE,${l.type},${l.date},${Math.round(l.durationSec/60)}m`);
-  });
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
-  let blob=new Blob([rows.join("\n")],{type:"text/csv"});
-  let url=URL.createObjectURL(blob);
-  let a=document.createElement("a");
-  a.href=url; a.download="ef_report.csv";
-  a.click();
-}
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #111827 0, #020617 45%, #020617 100%);
+      color: var(--text-main);
+      min-height: 100vh;
+      padding: 24px 16px 32px;
+      display: flex;
+      justify-content: center;
+    }
 
-/* ---------- RENDER ---------- */
-function render(){
-  let box=document.getElementById("projects");
-  box.innerHTML="";
-  data.forEach(p=>{
-    let card=document.createElement("div");
-    card.className="project";
+    .app {
+      width: 100%;
+      max-width: 960px;
+    }
 
-    let hdr=document.createElement("div");
-    hdr.className="header";
+    header {
+      margin-bottom: 18px;
+    }
 
-    let left=document.createElement("div");
-    let logo=document.createElement("div");
-    logo.className="logo";
-    if(p.logo){
-      let img=document.createElement("img");
-      img.src=p.logo;
-      logo.appendChild(img);
-    } else logo.textContent=p.name.charAt(0);
+    h1 {
+      font-size: 24px;
+      color: var(--spotify-green);
+      letter-spacing: 0.05em;
+      margin-bottom: 4px;
+    }
 
-    let name=document.createElement("span");
-    name.className="pname";
-    name.textContent=p.name + " ("+p.allocation+"%)";
+    .subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
 
-    left.appendChild(logo);
-    left.appendChild(name);
+    #today {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
 
-    let btns=document.createElement("div");
+    /* Pause bar */
+    .pause-bar {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
 
-    let start=document.createElement("button");
-    start.className="btn-dark";
-    start.textContent= activeProjectId===p.id ? "Running…" : "Start";
-    start.onclick=()=>startProject(p.id);
+    button {
+      border: none;
+      cursor: pointer;
+      font-size: 13px;
+      border-radius: var(--radius);
+      padding: 7px 13px;
+      transition: transform 0.08s ease, box-shadow 0.12s ease, background 0.15s ease;
+      white-space: nowrap;
+    }
 
-    let del=document.createElement("button");
-    del.className="btn-red";
-    del.textContent="X";
-    del.onclick=()=>deleteProject(p.id);
+    button:active {
+      transform: scale(0.97);
+    }
 
-    btns.appendChild(start);
-    btns.appendChild(del);
+    .btn-green {
+      background: var(--spotify-green);
+      color: #000;
+      font-weight: 600;
+      box-shadow: 0 8px 20px rgba(29, 185, 84, 0.4);
+    }
 
-    hdr.appendChild(left);
-    hdr.appendChild(btns);
+    .btn-dark {
+      background: #1F2933;
+      color: var(--text-main);
+    }
 
-    let timer=document.createElement("div");
-    timer.className="timer";
-    timer.style.color=p.remainingSeconds < p.totalSeconds*0.1 ? "#ffb347": var(--spotify-green);
-    timer.textContent=fmt(p.remainingSeconds);
+    .btn-outline-green {
+      background: transparent;
+      color: var(--spotify-green);
+      border: 1px solid var(--spotify-green);
+      padding-inline: 16px;
+    }
 
-    let tasks=document.createElement("div");
-    tasks.className="task-box";
-    tasks.innerHTML=`<div style="font-size:11px;color:#999;margin-bottom:6px;">Tasks</div>
-      <div>
-        <input id="task_${p.id}" style="width:60%;margin-right:4px;font-size:11px;padding:4px;border-radius:8px;background:#000;color:#fff" placeholder="Tên task"/>
-        <input id="est_${p.id}" style="width:20%;margin-right:4px;font-size:11px;padding:4px;border-radius:8px;background:#000;color:#fff" placeholder="Est(m)"/>
-        <button class="btn-green" style="font-size:11px;padding:4px" onclick="addTask('${p.id}')">+</button>
-      </div>`;
+    .btn-red {
+      background: #7F1D1D;
+      color: #FEE2E2;
+    }
 
-    p.tasks.forEach(t=>{
-      let row=document.createElement("div");
-      row.className="task-row";
-      row.innerHTML=`<span>${t.name} (${Math.round(t.effEst/60)}m est)</span>
-           <button class="btn-red" style="font-size:10px;padding:2px 6px" onclick="deleteTask('${p.id}','${t.id}')">Del</button>`;
-      tasks.appendChild(row);
-    });
+    /* Add project row */
+    .add-row {
+      display: grid;
+      grid-template-columns: minmax(0,2fr) 90px 150px auto;
+      gap: 8px;
+      background: rgba(18,18,18,0.96);
+      border-radius: 18px;
+      padding: 10px 14px;
+      margin-bottom: 18px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+    }
 
-    card.appendChild(hdr);
-    card.appendChild(timer);
-    card.appendChild(tasks);
+    input[type="text"],
+    input[type="number"] {
+      background: var(--bg-input);
+      border-radius: 999px;
+      border: 1px solid #374151;
+      padding: 7px 10px;
+      color: var(--text-main);
+      font-size: 13px;
+      outline: none;
+    }
 
-    box.appendChild(card);
-  });
-}
-render();
-</script>
+    input::placeholder {
+      color: #6B7280;
+    }
 
+    input:focus {
+      border-color: var(--spotify-green);
+      box-shadow: 0 0 0 1px rgba(29,185,84,0.5);
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    .file-label {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: #111827;
+      border-radius: 999px;
+      border: 1px solid #374151;
+      padding: 7px 10px;
+      font-size: 13px;
+      color: var(--text-main);
+      cursor: pointer;
+    }
+
+    /* Projects grid */
+    #projects {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .project {
+      background: var(--bg-card);
+      border-radius: 18px;
+      padding: 12px 14px 10px;
+      box-shadow: var(--shadow);
+      border: 1px solid #1F2933;
+    }
+
+    .proj-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .proj-main {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .logo-circle {
+      width: 30px;
+      height: 30px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: #020617;
+      border: 1px solid #4B5563;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 16px;
+    }
+
+    .logo-circle img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .proj-title {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .proj-name {
+      font-size: 14px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .proj-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .proj-meta {
+      font-size: 11px;
+      text-align: right;
+      color: var(--text-muted);
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 999px;
+      border: 1px solid #4B5563;
+      background: #020617;
+      margin-bottom: 2px;
+    }
+
+    .timer-box {
+      margin-top: 8px;
+      background: #020617;
+      border-radius: 16px;
+      padding: 7px 10px;
+      border: 1px solid #111827;
+    }
+
+    .timer {
+      font-family: ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 26px;
+      text-align: center;
+      letter-spacing: 0.15em;
+      color: var(--spotify-green);
+    }
+
+    .timer.low {
+      color: #FBBF24;
+    }
+
+    .timer.ot {
+      color: #22C55E;
+    }
+
+    .proj-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 8px;
+      gap: 8px;
+    }
+
+    .footer-left {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .tasks {
+      margin-top: 8px;
+      background: #18181B;
+      border-radius: 14px;
+      padding: 7px 8px;
+      border: 1px solid #27272F;
+      font-size: 12px;
+    }
+
+    .tasks-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+      color: var(--text-muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .task-add-row {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 5px;
+    }
+
+    .task-add-row input {
+      font-size: 11px;
+      padding: 4px 7px;
+      border-radius: 999px;
+      border: 1px solid #374151;
+      background: #020617;
+      color: var(--text-main);
+    }
+
+    .task-add-row button {
+      font-size: 11px;
+      padding: 4px 8px;
+    }
+
+    .task-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 2px 0;
+      border-bottom: 1px solid #27272F;
+    }
+
+    .task-row:last-child {
+      border-bottom: none;
+    }
+
+    .task-main {
+      max-width: 70%;
+    }
+
+    .task-name {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .task-meta {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .task-actions button {
+      font-size: 10px;
+      padding: 2px 6px;
+    }
+
+    @media (max-width: 700px) {
+      .add-row {
+        grid-template-columns: 1fr 1fr;
+        grid-auto-rows: auto;
+      }
+      .add-row > *:nth-child(3),
+      .add-row > *:nth-child(4) {
+        grid-column: span 2;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>EF Tracker – Spotify Mode</h1>
+      <div class="subtitle">Focus timer with projects, tasks, pause logging & CSV report.</div>
+      <div id="today"></div>
+    </header>
+
+    <!-- Pause buttons -->
+    <div class="pause-bar">
+      <button class="btn-outline-green" onclick="startPause('Lunch')">🍽 Lunch</button>
+      <button class="btn-outline-green" onclick="startPause('Bathroom')">🚻 Bathroom</button>
+      <button class="btn-outline-green" onclick="startPause('Personal')">🕘 Personal</button>
+    </div>
+
+    <!-- Add project row -->
+    <div class="add-row">
+      <input id="pname" type="text" placeholder="Tên dự án (ví dụ: Oddspark)" />
+      <input id="palloc" type="number" min="1" max="100" placeholder="% EF (vd: 40)" />
+      <label class="file-label">
+        Logo
+        <input id="plogo" type="file" accept="image/*">
+      </label>
+      <button class="btn-green" onclick="addProject()">+ Add</button>
+    </div>
+
+    <!-- Projects -->
+    <div id="projects"></div>
+
+    <!-- Export -->
+    <button class="btn-dark" onclick="exportCSV()">📎 Export CSV Report</button>
+  </div>
+
+  <script>
+    const BASE_SECONDS = 8 * 60 * 60;
+    let activeProjectId = null;
+
+    function todayString() {
+      return new Date().toLocaleDateString("vi-VN", {
+        weekday: "short",
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
+    }
+
+    document.getElementById("today").textContent = "Today: " + todayString();
+
+    // ---------- Storage ----------
+    let data = JSON.parse(localStorage.getItem("EF_DATA_SPOT") || "[]");
+    let pauseLogs = JSON.parse(localStorage.getItem("EF_PAUSE_LOGS") || "[]");
+    let activePause = null;
+
+    function saveData() {
+      localStorage.setItem("EF_DATA_SPOT", JSON.stringify(data));
+    }
+
+    function savePauseLogs() {
+      localStorage.setItem("EF_PAUSE_LOGS", JSON.stringify(pauseLogs));
+    }
+
+    // ---------- Utils ----------
+    function fmtTime(sec) {
+      sec = Math.max(0, Math.round(sec));
+      const h = Math.floor(sec / 3600);
+      const m = Math.floor((sec % 3600) / 60);
+      const s = sec % 60;
+      const pad = (n) => String(n).padStart(2, "0");
+      return `${pad(h)}:${pad(m)}:${pad(s)}`;
+    }
+
+    function minutes(sec) {
+      return Math.round(sec / 60);
+    }
+
+    function projectUsedSeconds(p) {
+      return Math.max(0, p.totalSeconds - p.remainingSeconds);
+    }
+
+    async function fileToBase64(file) {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target.result);
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // ---------- Add project ----------
+    async function addProject() {
+      const nameInput = document.getElementById("pname");
+      const allocInput = document.getElementById("palloc");
+      const logoInput = document.getElementById("plogo");
+
+      const name = nameInput.value.trim();
+      const alloc = parseFloat(allocInput.value);
+
+      if (!name || isNaN(alloc) || alloc <= 0) {
+        alert("Vui lòng nhập tên dự án và % EF hợp lệ.");
+        return;
+      }
+
+      const extraSeconds = (alloc / 100) * BASE_SECONDS;
+      let logoBase64 = "";
+
+      if (logoInput.files && logoInput.files[0]) {
+        logoBase64 = await fileToBase64(logoInput.files[0]);
+      }
+
+      // Nếu trùng tên dự án ⇒ cộng thêm vào project cũ
+      const existing = data.find(
+        (p) => p.name.toLowerCase() === name.toLowerCase()
+      );
+
+      if (existing) {
+        existing.allocation += alloc;
+        existing.allocatedSeconds += extraSeconds;
+        existing.totalSeconds += extraSeconds;
+        existing.remainingSeconds += extraSeconds;
+        if (logoBase64) existing.logo = logoBase64;
+      } else {
+        data.push({
+          id: crypto.randomUUID(),
+          name,
+          allocation: alloc,
+          allocatedSeconds: extraSeconds,
+          totalSeconds: extraSeconds,
+          remainingSeconds: extraSeconds,
+          logo: logoBase64,
+          tasks: [],
+          _lastTick: null,
+        });
+      }
+
+      nameInput.value = "";
+      allocInput.value = "";
+      logoInput.value = "";
+
+      saveData();
+      render();
+    }
+
+    // ---------- Pause handling ----------
+    function startPause(type) {
+      // stop all project timers
+      activeProjectId = null;
+      data.forEach((p) => {
+        p._lastTick = null;
+      });
+
+      activePause = {
+        type,
+        start: Date.now(),
+      };
+
+      alert(type + " pause started");
+    }
+
+    // ---------- Start project ----------
+    function startProject(projectId) {
+      // Nếu đang trong trạng thái pause => ghi log lại rồi clear
+      if (activePause) {
+        const now = Date.now();
+        const dur = (now - activePause.start) / 1000;
+        pauseLogs.push({
+          id: crypto.randomUUID(),
+          type: activePause.type,
+          start: new Date(activePause.start),
+          end: new Date(now),
+          durationSec: dur,
+          date: new Date().toISOString().split("T")[0],
+        });
+        activePause = null;
+        savePauseLogs();
+      }
+
+      const now2 = Date.now();
+      activeProjectId = projectId;
+      data.forEach((p) => {
+        if (p.id === projectId) {
+          p._lastTick = now2;
+        } else {
+          p._lastTick = null;
+        }
+      });
+      saveData();
+      render();
+    }
+
+    // ---------- Delete project ----------
+    function deleteProject(projectId) {
+      if (!confirm("Xóa project này và toàn bộ tasks?")) return;
+      data = data.filter((p) => p.id !== projectId);
+      if (activeProjectId === projectId) activeProjectId = null;
+      saveData();
+      render();
+    }
+
+    // ---------- Add task ----------
+    function addTask(projectId) {
+      const nameInput = document.getElementById(`task_${projectId}`);
+      const estInput = document.getElementById(`est_${projectId}`);
+
+      const name = nameInput.value.trim();
+      const estMin = parseFloat(estInput.value);
+
+      if (!name || isNaN(estMin) || estMin <= 0) return;
+
+      const proj = data.find((p) => p.id === projectId);
+      if (!proj) return;
+
+      proj.tasks.push({
+        id: crypto.randomUUID(),
+        name,
+        effEst: estMin * 60,
+        effActual: 0,
+      });
+
+      nameInput.value = "";
+      estInput.value = "";
+
+      saveData();
+      render();
+    }
+
+    // ---------- Delete task ----------
+    function deleteTask(projectId, taskId) {
+      const proj = data.find((p) => p.id === projectId);
+      if (!proj) return;
+      proj.tasks = proj.tasks.filter((t) => t.id !== taskId);
+      saveData();
+      render();
+    }
+
+    // ---------- Add OT ----------
+    function addOT(projectId) {
+      const minStr = prompt("Cộng thêm bao nhiêu phút OT?", "30");
+      if (minStr === null) return;
+      const mins = parseFloat(minStr);
+      if (isNaN(mins) || mins <= 0) return;
+
+      const proj = data.find((p) => p.id === projectId);
+      if (!proj) return;
+
+      const sec = mins * 60;
+      proj.totalSeconds += sec;
+      proj.remainingSeconds += sec;
+
+      saveData();
+      render();
+    }
+
+    // ---------- Timer loop ----------
+    setInterval(() => {
+      if (!activeProjectId) return;
+      const proj = data.find((p) => p.id === activeProjectId);
+      if (!proj) return;
+
+      const now = Date.now();
+      if (!proj._lastTick) {
+        proj._lastTick = now;
+        return;
+      }
+
+      const diff = (now - proj._lastTick) / 1000;
+      if (diff < 0.5) return;
+      proj._lastTick = now;
+
+      proj.remainingSeconds -= diff;
+      if (proj.remainingSeconds <= 0) {
+        proj.remainingSeconds = 0;
+        activeProjectId = null;
+      }
+
+      // allocate actual time cho task cuối cùng
+      if (proj.tasks.length) {
+        proj.tasks[proj.tasks.length - 1].effActual += diff;
+      }
+
+      saveData();
+      render();
+    }, 800);
+
+    // ---------- Export CSV ----------
+    function exportCSV() {
+      const rows = ["Project,Task,Type,Est(min),Actual(min)"];
+
+      data.forEach((p) => {
+        const type = p.totalSeconds > p.allocatedSeconds ? "OT" : "Formal";
+        if (!p.tasks.length) {
+          rows.push(
+            [
+              p.name,
+              "(no task)",
+              type,
+              0,
+              minutes(projectUsedSeconds(p)),
+            ].join(",")
+          );
+        } else {
+          p.tasks.forEach((t) => {
+            rows.push(
+              [
+                p.name,
+                t.name,
+                type,
+                minutes(t.effEst),
+                minutes(t.effActual),
+              ].join(",")
+            );
+          });
+        }
+      });
+
+      rows.push("");
+      rows.push("Pause Logs");
+      rows.push("Type,Date,Duration(min)");
+
+      pauseLogs.forEach((l) => {
+        rows.push(
+          [l.type, l.date, minutes(l.durationSec)].join(",")
+        );
+      });
+
+      const blob = new Blob([rows.join("\n")], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "ef_report.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // ---------- Render ----------
+    function render() {
+      const container = document.getElementById("projects");
+      container.innerHTML = "";
+
+      if (!data.length) return;
+
+      data.forEach((p) => {
+        const card = document.createElement("article");
+        card.className = "project";
+
+        const header = document.createElement("div");
+        header.className = "proj-header";
+
+        const left = document.createElement("div");
+        left.className = "proj-main";
+
+        const logo = document.createElement("div");
+        logo.className = "logo-circle";
+        if (p.logo) {
+          const img = document.createElement("img");
+          img.src = p.logo;
+          logo.appendChild(img);
+        } else {
+          logo.textContent = p.name.charAt(0).toUpperCase();
+        }
+
+        const title = document.createElement("div");
+        title.className = "proj-title";
+
+        const nameEl = document.createElement("div");
+        nameEl.className = "proj-name";
+        nameEl.textContent = p.name;
+
+        const subEl = document.createElement("div");
+        subEl.className = "proj-sub";
+        subEl.textContent = `${p.allocation}% của 8h • Base ${minutes(
+          p.allocatedSeconds
+        )} phút`;
+
+        title.appendChild(nameEl);
+        title.appendChild(subEl);
+
+        left.appendChild(logo);
+        left.appendChild(title);
+
+        const meta = document.createElement("div");
+        meta.className = "proj-meta";
+        const used = minutes(projectUsedSeconds(p));
+        const remaining = minutes(p.remainingSeconds);
+        meta.innerHTML = `<div class="pill">${used}m used</div><div>${remaining}m left</div>`;
+
+        header.appendChild(left);
+        header.appendChild(meta);
+
+        const timerBox = document.createElement("div");
+        timerBox.className = "timer-box";
+
+        const timer = document.createElement("div");
+        timer.className = "timer";
+        timer.textContent = fmtTime(p.remainingSeconds);
+
+        const lowThreshold = p.totalSeconds * 0.1;
+        if (p.remainingSeconds <= lowThreshold && p.remainingSeconds > 0) {
+          timer.classList.add("low");
+        }
+        if (p.totalSeconds > p.allocatedSeconds) {
+          timer.classList.add("ot");
+        }
+
+        timerBox.appendChild(timer);
+
+        const footer = document.createElement("div");
+        footer.className = "proj-footer";
+
+        const leftButtons = document.createElement("div");
+        leftButtons.className = "footer-left";
+
+        const startBtn = document.createElement("button");
+        startBtn.className = "btn-dark";
+        startBtn.textContent =
+          activeProjectId === p.id ? "Running…" : "Start";
+        startBtn.onclick = () => startProject(p.id);
+
+        const otBtn = document.createElement("button");
+        otBtn.className = "btn-dark";
+        otBtn.textContent = "+ OT";
+        otBtn.onclick = () => addOT(p.id);
+
+        const delBtn = document.createElement("button");
+        delBtn.className = "btn-red";
+        delBtn.textContent = "Delete";
+        delBtn.onclick = () => deleteProject(p.id);
+
+        leftButtons.appendChild(startBtn);
+        leftButtons.appendChild(otBtn);
+        leftButtons.appendChild(delBtn);
+
+        const rightInfo = document.createElement("div");
+        rightInfo.style.fontSize = "11px";
+        rightInfo.style.color = "#9CA3AF";
+        rightInfo.innerHTML = `${p.tasks.length} task(s)<br/>Total ${minutes(
+          p.totalSeconds
+        )}m`;
+
+        footer.appendChild(leftButtons);
+        footer.appendChild(rightInfo);
+
+        const tasks = document.createElement("div");
+        tasks.className = "tasks";
+
+        const tHeader = document.createElement("div");
+        tHeader.className = "tasks-header";
+        tHeader.innerHTML = `<span>Tasks</span><span>${p.tasks.length} item</span>`;
+
+        const addRow = document.createElement("div");
+        addRow.className = "task-add-row";
+        addRow.innerHTML = `
+          <input id="task_${p.id}" type="text" placeholder="Tên task..." />
+          <input id="est_${p.id}" type="number" placeholder="Est (phút)" style="max-width:100px" />
+          <button class="btn-green" onclick="addTask('${p.id}')">+</button>
+        `;
+
+        tasks.appendChild(tHeader);
+        tasks.appendChild(addRow);
+
+        p.tasks.forEach((t) => {
+          const row = document.createElement("div");
+          row.className = "task-row";
+
+          const mainTask = document.createElement("div");
+          mainTask.className = "task-main";
+
+          const nameTask = document.createElement("div");
+          nameTask.className = "task-name";
+          nameTask.textContent = t.name;
+
+          const metaTask = document.createElement("div");
+          metaTask.className = "task-meta";
+          metaTask.textContent = `Est ${minutes(
+            t.effEst
+          )}m • Actual ${minutes(t.effActual)}m`;
+
+          mainTask.appendChild(nameTask);
+          mainTask.appendChild(metaTask);
+
+          const actions = document.createElement("div");
+          actions.className = "task-actions";
+
+          const delTaskBtn = document.createElement("button");
+          delTaskBtn.className = "btn-red";
+          delTaskBtn.textContent = "Del";
+          delTaskBtn.onclick = () => deleteTask(p.id, t.id);
+
+          actions.appendChild(delTaskBtn);
+
+          row.appendChild(mainTask);
+          row.appendChild(actions);
+
+          tasks.appendChild(row);
+        });
+
+        card.appendChild(header);
+        card.appendChild(timerBox);
+        card.appendChild(footer);
+        card.appendChild(tasks);
+
+        container.appendChild(card);
+      });
+    }
+
+    render();
+  </script>
 </body>
 </html>

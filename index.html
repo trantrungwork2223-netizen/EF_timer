@@ -1,947 +1,456 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8" />
-  <title>EF Tracker – Apple Dark</title>
-  <style>
-    :root {
-      --bg-main: #050816;
-      --bg-card: #111827;
-      --bg-card-soft: #020617;
-      --border-soft: #1f2933;
-      --accent: #0ea5e9;
-      --accent-soft: #38bdf8;
-      --danger: #ef4444;
-      --text-main: #f9fafb;
-      --text-muted: #9ca3af;
-      --radius-lg: 18px;
-      --radius-md: 10px;
-      --shadow-soft: 0 18px 45px rgba(15, 23, 42, 0.7);
-    }
+<meta charset="UTF-8">
+<title>EF Tracker – Spotify Mode</title>
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+<style>
+/* ---------- Spotify Theme ---------- */
+:root {
+  --spotify-green: #1DB954;
+  --bg-dark: #0B0B0B;
+  --bg-card: #121212;
+  --text-light: #F2F2F2;
+  --text-muted: #9DA0A6;
+  --danger: #ff4d4d;
+  --radius: 14px;
+  --shadow: 0 10px 25px rgba(0,0,0,0.6);
+}
 
-    body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont,
-        "SF Pro Text", "Segoe UI", sans-serif;
-      background: radial-gradient(circle at top, #111827 0, #020617 35%, #020617 100%);
-      color: var(--text-main);
-      min-height: 100vh;
-      padding: 32px 20px 40px;
-      display: flex;
-      justify-content: center;
-    }
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: var(--bg-dark);
+  color: var(--text-light);
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+}
 
-    .app-shell {
-      width: 100%;
-      max-width: 1120px;
-      background: rgba(15, 23, 42, 0.92);
-      border-radius: 28px;
-      border: 1px solid rgba(148, 163, 184, 0.15);
-      box-shadow: var(--shadow-soft);
-      padding: 22px 24px 26px;
-      backdrop-filter: blur(18px);
-    }
+.app {
+  width: 100%;
+  max-width: 880px;
+}
 
-    .app-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      margin-bottom: 18px;
-      gap: 12px;
-    }
+h1 {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--spotify-green);
+  margin-bottom: 6px;
+}
 
-    .title-group {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
+.subtitle {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 18px;
+}
 
-    h1 {
-      font-size: 22px;
-      letter-spacing: 0.03em;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
+/* Add Project UI */
+.add-row {
+  display: grid;
+  grid-template-columns: 1fr 100px 140px auto;
+  gap: 8px;
+  background: var(--bg-card);
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  margin-bottom: 16px;
+}
 
-    .badge {
-      font-size: 11px;
-      background: rgba(15, 118, 110, 0.15);
-      color: #6ee7b7;
-      padding: 2px 8px;
-      border-radius: 999px;
-      border: 1px solid rgba(45, 212, 191, 0.35);
-    }
+input, .file-label {
+  background: black;
+  border: 1px solid #333;
+  border-radius: var(--radius);
+  padding: 7px 10px;
+  font-size: 13px;
+  color: var(--text-light);
+}
 
-    .subtitle {
-      font-size: 13px;
-      color: var(--text-muted);
-    }
+.file-label {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+}
 
-    .today-label {
-      font-size: 13px;
-      color: var(--text-muted);
-    }
+input[type=file] { display:none; }
 
-    .chip {
-      padding: 3px 9px;
-      border-radius: 999px;
-      border: 1px solid rgba(148, 163, 184, 0.36);
-      background: rgba(15, 23, 42, 0.7);
-      font-size: 11px;
-    }
+/* Buttons */
+button {
+  border: none;
+  padding: 7px 13px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 13px;
+}
 
-    /* Add project bar */
-    .add-bar {
-      display: grid;
-      grid-template-columns: minmax(0, 1.5fr) 110px 170px auto;
-      gap: 10px;
-      background: linear-gradient(135deg, #020617, #020617 40%, #020617 100%);
-      padding: 12px 14px;
-      border-radius: 999px;
-      border: 1px solid rgba(148, 163, 184, 0.25);
-      margin-bottom: 16px;
-      align-items: center;
-    }
+.btn-green {
+  background: var(--spotify-green);
+  color: #000;
+}
+.btn-dark {
+  background: #222;
+  color: var(--text-light);
+}
+.btn-red {
+  background: var(--danger);
+  color: #000;
+}
+.btn-pause {
+  background: #111;
+  border: 1px solid var(--spotify-green);
+  color: var(--spotify-green);
+}
 
-    .input, .file-input-label {
-      font-size: 13px;
-      padding: 7px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(55, 65, 81, 0.7);
-      background: rgba(15, 23, 42, 0.92);
-      color: var(--text-main);
-      outline: none;
-      transition: border 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
-    }
+/* Cards */
+.project {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  padding: 14px;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow);
+}
 
-    .input::placeholder {
-      color: #6b7280;
-    }
+.header {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
 
-    .input:focus {
-      border-color: var(--accent-soft);
-      box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.5);
-      background: #020617;
-    }
+.logo {
+  width:28px;
+  height:28px;
+  border-radius:50%;
+  overflow:hidden;
+  border:1px solid #333;
+}
 
-    input[type="file"] {
-      display: none;
-    }
+.logo img { width:100%; height:100%; object-fit:cover; }
 
-    .file-input-label {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      gap: 6px;
-      color: #e5e7eb;
-      white-space: nowrap;
-    }
+.pname { font-size:14px; font-weight:600; }
 
-    .file-input-label span {
-      font-size: 12px;
-    }
+.timer {
+  margin-top: 6px;
+  padding: 6px;
+  text-align:center;
+  font-size:28px;
+  background:black;
+  border-radius: var(--radius);
+  font-family: monospace;
+  letter-spacing: 0.1em;
+}
 
-    .btn-primary,
-    .btn-secondary,
-    .btn-danger,
-    .btn-ghost {
-      border-radius: 999px;
-      border: 1px solid transparent;
-      padding: 7px 14px;
-      font-size: 13px;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      transition:
-        background 0.15s ease,
-        border 0.15s ease,
-        transform 0.08s ease,
-        box-shadow 0.12s ease;
-      white-space: nowrap;
-    }
+/* Tasks */
+.task-box {
+  background:#171717;
+  border-radius:var(--radius);
+  margin-top:10px;
+  padding:8px;
+}
 
-    .btn-primary {
-      background: linear-gradient(135deg, var(--accent), var(--accent-soft));
-      border-color: rgba(56, 189, 248, 0.8);
-      color: #0b1020;
-      font-weight: 600;
-      box-shadow: 0 8px 20px rgba(56, 189, 248, 0.35);
-    }
+.task-row {
+  display:flex;
+  justify-content:space-between;
+  font-size:12px;
+  padding:4px 0;
+  border-bottom:1px solid #222;
+}
+.task-row:last-child { border:none; }
 
-    .btn-primary:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 10px 25px rgba(56, 189, 248, 0.45);
-    }
-
-    .btn-secondary {
-      background: rgba(15, 23, 42, 0.9);
-      border-color: rgba(148, 163, 184, 0.4);
-      color: #e5e7eb;
-    }
-
-    .btn-secondary:hover {
-      background: #020617;
-      border-color: rgba(249, 250, 251, 0.6);
-    }
-
-    .btn-danger {
-      background: rgba(239, 68, 68, 0.1);
-      border-color: rgba(239, 68, 68, 0.8);
-      color: #fecaca;
-    }
-
-    .btn-danger:hover {
-      background: rgba(239, 68, 68, 0.18);
-    }
-
-    .btn-ghost {
-      background: transparent;
-      border-color: rgba(148, 163, 184, 0.35);
-      color: var(--text-main);
-      padding-inline: 10px;
-    }
-
-    .btn-ghost:hover {
-      background: rgba(15, 23, 42, 0.8);
-    }
-
-    /* Project grid */
-    .projects-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 14px;
-      margin-bottom: 14px;
-    }
-
-    .project-card {
-      background: radial-gradient(circle at top left, #020617 0, #020617 40%, #020617 100%);
-      border-radius: var(--radius-lg);
-      border: 1px solid rgba(31, 41, 55, 0.95);
-      padding: 14px 16px 12px;
-      box-shadow: 0 12px 36px rgba(15, 23, 42, 0.8);
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .project-card::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: radial-gradient(circle at top right,
-        rgba(56, 189, 248, 0.1), transparent 55%);
-      pointer-events: none;
-    }
-
-    .project-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-      position: relative;
-      z-index: 1;
-    }
-
-    .project-main {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      min-width: 0;
-    }
-
-    .logo-circle {
-      width: 30px;
-      height: 30px;
-      border-radius: 999px;
-      overflow: hidden;
-      background: #020617;
-      border: 1px solid rgba(148, 163, 184, 0.5);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-    }
-
-    .logo-circle img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    .project-title-block {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-      min-width: 0;
-    }
-
-    .project-name {
-      font-size: 14px;
-      font-weight: 500;
-      white-space: nowrap;
-      text-overflow: ellipsis;
-      overflow: hidden;
-    }
-
-    .project-sub {
-      font-size: 11px;
-      color: var(--text-muted);
-    }
-
-    .project-meta {
-      font-size: 11px;
-      color: var(--text-muted);
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 3px;
-    }
-
-    .pill {
-      border-radius: 999px;
-      padding: 2px 7px;
-      border: 1px solid rgba(148, 163, 184, 0.4);
-      background: rgba(15, 23, 42, 0.85);
-    }
-
-    .timer-shell {
-      background: radial-gradient(circle at top, #020617 0, #020617 50%, #020617 100%);
-      border-radius: var(--radius-md);
-      border: 1px solid #020617;
-      padding: 8px 12px;
-      margin-top: 2px;
-      box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.9);
-      position: relative;
-      z-index: 1;
-    }
-
-    .timer-display {
-      font-family: "SF Mono", ui-monospace, Menlo, Monaco, Consolas,
-        "Liberation Mono", "Courier New", monospace;
-      font-size: 28px;
-      text-align: center;
-      letter-spacing: 0.18em;
-      color: #e5e7eb;
-    }
-
-    .timer-display.low {
-      color: #fb923c;
-    }
-
-    .timer-display.ot {
-      color: #22c55e;
-    }
-
-    .project-footer {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 8px;
-      gap: 10px;
-      position: relative;
-      z-index: 1;
-    }
-
-    .footer-left {
-      display: flex;
-      gap: 6px;
-      align-items: center;
-    }
-
-    .footer-right {
-      font-size: 11px;
-      color: var(--text-muted);
-      text-align: right;
-    }
-
-    /* Tasks */
-    .tasks-panel {
-      margin-top: 8px;
-      border-radius: var(--radius-md);
-      background: rgba(15, 23, 42, 0.88);
-      border: 1px solid rgba(31, 41, 55, 0.9);
-      padding: 9px 10px 7px;
-      position: relative;
-      z-index: 1;
-    }
-
-    .tasks-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 6px;
-    }
-
-    .tasks-title {
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.11em;
-      color: #9ca3af;
-    }
-
-    .task-add-row {
-      display: flex;
-      gap: 6px;
-      margin-bottom: 6px;
-    }
-
-    .task-input {
-      font-size: 12px;
-      padding: 5px 8px;
-      border-radius: 999px;
-      border: 1px solid rgba(55, 65, 81, 0.8);
-      background: #020617;
-      color: var(--text-main);
-      outline: none;
-      min-width: 0;
-    }
-
-    .task-input::placeholder {
-      color: #6b7280;
-    }
-
-    .task-input:focus {
-      border-color: var(--accent-soft);
-    }
-
-    .task-add-btn {
-      font-size: 11px;
-      padding: 4px 9px;
-      border-radius: 999px;
-      background: rgba(56, 189, 248, 0.1);
-      border: 1px solid rgba(56, 189, 248, 0.7);
-      color: #e0f2fe;
-      cursor: pointer;
-    }
-
-    .task-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 12px;
-      padding: 3px 0;
-    }
-
-    .task-main {
-      display: flex;
-      flex-direction: column;
-      gap: 1px;
-    }
-
-    .task-name {
-      font-weight: 500;
-      white-space: nowrap;
-      text-overflow: ellipsis;
-      overflow: hidden;
-      max-width: 170px;
-    }
-
-    .task-meta {
-      font-size: 11px;
-      color: var(--text-muted);
-    }
-
-    .task-actions {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .task-delete {
-      border-radius: 999px;
-      border: 1px solid rgba(248, 113, 113, 0.8);
-      background: rgba(127, 29, 29, 0.85);
-      color: #fecaca;
-      font-size: 10px;
-      padding: 2px 7px;
-      cursor: pointer;
-    }
-
-    /* Footer actions */
-    .app-footer {
-      display: flex;
-      justify-content: flex-end;
-      margin-top: 6px;
-    }
-
-    .app-footer .btn-secondary {
-      font-size: 12px;
-      padding-inline: 12px;
-    }
-
-    /* Responsive */
-    @media (max-width: 720px) {
-      .app-shell {
-        padding: 18px 14px 20px;
-        border-radius: 18px;
-      }
-      .add-bar {
-        grid-template-columns: 1fr 1fr;
-        grid-auto-rows: auto;
-        row-gap: 8px;
-        border-radius: 18px;
-      }
-      .add-bar > *:nth-child(3) {
-        grid-column: span 2;
-      }
-      .add-bar > *:nth-child(4) {
-        grid-column: span 2;
-        justify-self: flex-end;
-      }
-      .timer-display {
-        font-size: 24px;
-        letter-spacing: 0.12em;
-      }
-    }
-  </style>
+/* Pause buttons Row */
+.pausebar {
+  display:flex;
+  justify-content:center;
+  gap:10px;
+  margin-bottom:20px;
+}
+</style>
 </head>
+
 <body>
-  <div class="app-shell">
-    <header class="app-header">
-      <div class="title-group">
-        <h1>
-          EF Tracker
-          <span class="badge">Apple Dark • Personal Performance</span>
-        </h1>
-        <p class="subtitle">
-          Track effective focus time per project, tasks, and overtime in a single clean dashboard.
-        </p>
-      </div>
-      <div class="today-label">
-        <span id="today"></span>
-        <span class="chip">8h base • Single active project</span>
-      </div>
-    </header>
+<div class="app">
+  <h1>EF Tracker – Spotify Mode</h1>
+  <div class="subtitle">Focus timer with tasks, pause logging, CSV report.</div>
+  <div id="today" class="subtitle"></div>
 
-    <!-- Add project bar -->
-    <section class="add-bar">
-      <input id="pname" class="input" placeholder="Tên dự án (ví dụ: Maison Loyalty 2.0)" />
-      <input id="palloc" class="input" type="number" min="1" max="100" placeholder="% EF (vd: 40)" />
-      <label class="file-input-label">
-        <input id="plogo" type="file" accept="image/*" />
-        <span>📎 Logo dự án</span>
-      </label>
-      <button class="btn-primary" onclick="addProject()">
-        + Add Project
-      </button>
-    </section>
-
-    <!-- Project cards -->
-    <section id="projects" class="projects-grid"></section>
-
-    <footer class="app-footer">
-      <button class="btn-secondary" onclick="exportCSV()">Export EF Report CSV</button>
-    </footer>
+  <!-- Pause Buttons -->
+  <div class="pausebar">
+    <button class="btn-pause" onclick="startPause('Lunch')">🍽 Lunch</button>
+    <button class="btn-pause" onclick="startPause('Bathroom')">🚻 Bathroom</button>
+    <button class="btn-pause" onclick="startPause('Personal')">🕘 Personal</button>
   </div>
 
-  <script>
-    const BASE_SECONDS = 8 * 60 * 60;
-    let activeProjectId = null;
+  <!-- Add project UI -->
+  <div class="add-row">
+    <input id="pname" placeholder="Tên dự án" />
+    <input id="palloc" type="number" placeholder="%EF" />
+    <label class="file-label">Logo
+      <input id="plogo" type="file" accept="image/*" />
+    </label>
+    <button class="btn-green" onclick="addProject()">+ Add</button>
+  </div>
 
-    function loadData() {
-      return JSON.parse(localStorage.getItem("EF_DATA_V2") || "[]");
-    }
+  <!-- Projects -->
+  <div id="projects"></div>
 
-    function saveData() {
-      localStorage.setItem("EF_DATA_V2", JSON.stringify(data));
-    }
+  <!-- Export -->
+  <button class="btn-dark" onclick="exportCSV()">📎 Export CSV Report</button>
+</div>
 
-    let data = loadData();
+<script>
+/* ---------- GLOBAL STATE ---------- */
+let BASE_SECONDS = 8 * 60 * 60;
+let activeProjectId = null;
 
-    document.getElementById("today").textContent =
-      new Date().toLocaleDateString("vi-VN", {
-        weekday: "short",
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
+let data = JSON.parse(localStorage.getItem("EF_DATA_SPOT") || "[]");
+let pauseLogs = JSON.parse(localStorage.getItem("EF_PAUSE_LOGS") || "[]");
+let activePause = null;
+
+function saveData(){ localStorage.setItem("EF_DATA_SPOT", JSON.stringify(data)); }
+function savePauseLogs(){ localStorage.setItem("EF_PAUSE_LOGS", JSON.stringify(pauseLogs)); }
+
+/* ---------- UTIL ---------- */
+document.getElementById("today").textContent =
+  "Today: " + new Date().toLocaleDateString("vi-VN");
+
+function fmt(sec){
+  sec = Math.max(0, sec);
+  let h = Math.floor(sec/3600),
+      m = Math.floor((sec%3600)/60),
+      s = Math.floor(sec%60);
+  return [h,m,s].map(v=>String(v).padStart(2,"0")).join(":");
+}
+
+/* ---------- ADD PROJECT ---------- */
+async function fileToBase64(file){
+  return new Promise(res=>{
+    let r = new FileReader();
+    r.onload = e=>res(e.target.result);
+    r.readAsDataURL(file);
+  });
+}
+
+async function addProject(){
+  let name=document.getElementById("pname").value.trim();
+  let alloc=parseFloat(document.getElementById("palloc").value);
+  let logoInput=document.getElementById("plogo").files[0];
+
+  if(!name || isNaN(alloc)){ alert("Nhập tên và % EF"); return;}
+
+  let sec = (alloc/100)*BASE_SECONDS;
+  let base64 = "";
+  if(logoInput) base64 = await fileToBase64(logoInput);
+
+  data.push({
+    id:crypto.randomUUID(),
+    name,
+    allocation:alloc,
+    totalSeconds:sec,
+    remainingSeconds:sec,
+    logo:base64,
+    tasks:[],
+    _lastTick:null
+  });
+
+  saveData();
+  render();
+}
+
+/* ---------- START PROJECT ---------- */
+function startProject(id){
+  // nếu đang trong pause → log pause trước
+  if(activePause){
+    let now=Date.now();
+    let dur=(now-activePause.start)/1000;
+    pauseLogs.push({
+      id:crypto.randomUUID(),
+      type:activePause.type,
+      start:new Date(activePause.start),
+      end:new Date(now),
+      durationSec:dur,
+      date: new Date().toISOString().split("T")[0]
+    });
+    activePause=null;
+    savePauseLogs();
+  }
+
+  let now2=Date.now();
+  activeProjectId=id;
+  data.forEach(p=>{
+    if(p.id===id) p._lastTick=now2;
+    else p._lastTick=null;
+  });
+  saveData();
+  render();
+}
+
+/* ---------- DELETE PROJECT ---------- */
+function deleteProject(id){
+  if(!confirm("Xóa toàn bộ project?")) return;
+  data=data.filter(p=>p.id!==id);
+  if(activeProjectId===id) activeProjectId=null;
+  saveData();
+  render();
+}
+
+/* ---------- ADD TASK ---------- */
+function addTask(pid){
+  let name=document.getElementById(`task_${pid}`).value.trim();
+  let est=parseFloat(document.getElementById(`est_${pid}`).value);
+  if(!name || isNaN(est)) return;
+
+  let pr=data.find(p=>p.id===pid);
+  pr.tasks.push({
+    id:crypto.randomUUID(),
+    name,
+    effEst:est*60,
+    effActual:0
+  });
+  saveData();
+  render();
+}
+
+/* ---------- DELETE TASK ---------- */
+function deleteTask(pid,tid){
+  let p=data.find(p=>p.id===pid);
+  p.tasks=p.tasks.filter(t=>t.id!==tid);
+  saveData();
+  render();
+}
+
+/* ---------- PAUSE LOGGING ---------- */
+function startPause(type){
+  activeProjectId=null;
+  data.forEach(p=>p._lastTick=null);
+
+  activePause={
+    type,
+    start:Date.now()
+  };
+  alert(type + " pause started");
+}
+
+/* ---------- TIMER LOOP ---------- */
+setInterval(()=>{
+  if(!activeProjectId) return;
+  let now=Date.now();
+  let p=data.find(x=>x.id===activeProjectId);
+  if(!p||!p._lastTick) return;
+  let diff=(now-p._lastTick)/1000;
+  p._lastTick=now;
+  p.remainingSeconds-=diff;
+  if(p.remainingSeconds<0) p.remainingSeconds=0;
+
+  // allocate to active task (last task)
+  if(p.tasks.length){
+    p.tasks[p.tasks.length-1].effActual+=diff;
+  }
+  saveData();
+  render();
+},1000);
+
+/* ---------- EXPORT CSV ---------- */
+function exportCSV(){
+  let rows=["Project,Task,Type,Est(m),Actual(m)"];
+
+  data.forEach(p=>{
+    let type=p.totalSeconds>p.allocatedSeconds?"OT":"Formal";
+    if(p.tasks.length){
+      p.tasks.forEach(t=>{
+        rows.push(`${p.name},${t.name},${type},${Math.round(t.effEst/60)},${Math.round(t.effActual/60)}`);
       });
-
-    function formatTime(sec) {
-      sec = Math.max(0, Math.round(sec));
-      const h = Math.floor(sec / 3600);
-      const m = Math.floor((sec % 3600) / 60);
-      const s = sec % 60;
-      const pad = (n) => String(n).padStart(2, "0");
-      return `${pad(h)}:${pad(m)}:${pad(s)}`;
+    } else {
+      rows.push(`${p.name},(no task),${type},0,${Math.round((p.totalSeconds-p.remainingSeconds)/60)}`);
     }
+  });
+
+  rows.push("");
+  rows.push("Pause Logs");
+  pauseLogs.forEach(l=>{
+    rows.push(`PAUSE,${l.type},${l.date},${Math.round(l.durationSec/60)}m`);
+  });
+
+  let blob=new Blob([rows.join("\n")],{type:"text/csv"});
+  let url=URL.createObjectURL(blob);
+  let a=document.createElement("a");
+  a.href=url; a.download="ef_report.csv";
+  a.click();
+}
+
+/* ---------- RENDER ---------- */
+function render(){
+  let box=document.getElementById("projects");
+  box.innerHTML="";
+  data.forEach(p=>{
+    let card=document.createElement("div");
+    card.className="project";
+
+    let hdr=document.createElement("div");
+    hdr.className="header";
+
+    let left=document.createElement("div");
+    let logo=document.createElement("div");
+    logo.className="logo";
+    if(p.logo){
+      let img=document.createElement("img");
+      img.src=p.logo;
+      logo.appendChild(img);
+    } else logo.textContent=p.name.charAt(0);
+
+    let name=document.createElement("span");
+    name.className="pname";
+    name.textContent=p.name + " ("+p.allocation+"%)";
+
+    left.appendChild(logo);
+    left.appendChild(name);
+
+    let btns=document.createElement("div");
+
+    let start=document.createElement("button");
+    start.className="btn-dark";
+    start.textContent= activeProjectId===p.id ? "Running…" : "Start";
+    start.onclick=()=>startProject(p.id);
+
+    let del=document.createElement("button");
+    del.className="btn-red";
+    del.textContent="X";
+    del.onclick=()=>deleteProject(p.id);
+
+    btns.appendChild(start);
+    btns.appendChild(del);
+
+    hdr.appendChild(left);
+    hdr.appendChild(btns);
+
+    let timer=document.createElement("div");
+    timer.className="timer";
+    timer.style.color=p.remainingSeconds < p.totalSeconds*0.1 ? "#ffb347": var(--spotify-green);
+    timer.textContent=fmt(p.remainingSeconds);
+
+    let tasks=document.createElement("div");
+    tasks.className="task-box";
+    tasks.innerHTML=`<div style="font-size:11px;color:#999;margin-bottom:6px;">Tasks</div>
+      <div>
+        <input id="task_${p.id}" style="width:60%;margin-right:4px;font-size:11px;padding:4px;border-radius:8px;background:#000;color:#fff" placeholder="Tên task"/>
+        <input id="est_${p.id}" style="width:20%;margin-right:4px;font-size:11px;padding:4px;border-radius:8px;background:#000;color:#fff" placeholder="Est(m)"/>
+        <button class="btn-green" style="font-size:11px;padding:4px" onclick="addTask('${p.id}')">+</button>
+      </div>`;
+
+    p.tasks.forEach(t=>{
+      let row=document.createElement("div");
+      row.className="task-row";
+      row.innerHTML=`<span>${t.name} (${Math.round(t.effEst/60)}m est)</span>
+           <button class="btn-red" style="font-size:10px;padding:2px 6px" onclick="deleteTask('${p.id}','${t.id}')">Del</button>`;
+      tasks.appendChild(row);
+    });
+
+    card.appendChild(hdr);
+    card.appendChild(timer);
+    card.appendChild(tasks);
+
+    box.appendChild(card);
+  });
+}
+render();
+</script>
 
-    function formatMinutes(sec) {
-      return Math.round(sec / 60);
-    }
-
-    function projectUsedSeconds(p) {
-      return Math.max(0, p.totalSeconds - p.remainingSeconds);
-    }
-
-    function render() {
-      const container = document.getElementById("projects");
-      container.innerHTML = "";
-
-      if (!data.length) return;
-
-      data.forEach((p) => {
-        const card = document.createElement("article");
-        card.className = "project-card";
-
-        // HEADER
-        const header = document.createElement("div");
-        header.className = "project-header";
-
-        const main = document.createElement("div");
-        main.className = "project-main";
-
-        const logoWrap = document.createElement("div");
-        logoWrap.className = "logo-circle";
-        if (p.logo) {
-          const img = document.createElement("img");
-          img.src = p.logo;
-          logoWrap.appendChild(img);
-        } else {
-          logoWrap.textContent = p.name.charAt(0).toUpperCase();
-        }
-
-        const titleBlock = document.createElement("div");
-        titleBlock.className = "project-title-block";
-
-        const nameEl = document.createElement("div");
-        nameEl.className = "project-name";
-        nameEl.textContent = p.name;
-
-        const subEl = document.createElement("div");
-        subEl.className = "project-sub";
-        subEl.textContent = `${p.allocation}% của 8h • ${formatMinutes(
-          p.allocatedSeconds
-        )} phút base`;
-
-        titleBlock.appendChild(nameEl);
-        titleBlock.appendChild(subEl);
-
-        main.appendChild(logoWrap);
-        main.appendChild(titleBlock);
-
-        const meta = document.createElement("div");
-        meta.className = "project-meta";
-        const used = formatMinutes(projectUsedSeconds(p));
-        const remaining = formatMinutes(p.remainingSeconds);
-        meta.innerHTML = `
-          <span class="pill">Used: ${used}m</span>
-          <span>${remaining}m remaining</span>
-        `;
-
-        header.appendChild(main);
-        header.appendChild(meta);
-
-        // TIMER
-        const shell = document.createElement("div");
-        shell.className = "timer-shell";
-
-        const timer = document.createElement("div");
-        timer.className = "timer-display";
-        timer.textContent = formatTime(p.remainingSeconds);
-
-        const lowThreshold = p.totalSeconds * 0.1;
-        if (p.remainingSeconds <= lowThreshold && p.remainingSeconds > 0) {
-          timer.classList.add("low");
-        }
-        if (p.totalSeconds > p.allocatedSeconds) {
-          timer.classList.add("ot");
-        }
-
-        shell.appendChild(timer);
-
-        // FOOTER (buttons)
-        const footer = document.createElement("div");
-        footer.className = "project-footer";
-
-        const left = document.createElement("div");
-        left.className = "footer-left";
-
-        const btnStart = document.createElement("button");
-        btnStart.className = "btn-secondary";
-        btnStart.textContent =
-          activeProjectId === p.id ? "Running…" : "Start focus";
-        btnStart.onclick = () => startProject(p.id);
-
-        const btnDelete = document.createElement("button");
-        btnDelete.className = "btn-danger";
-        btnDelete.textContent = "Delete";
-        btnDelete.onclick = () => deleteProject(p.id);
-
-        left.appendChild(btnStart);
-        left.appendChild(btnDelete);
-
-        const right = document.createElement("div");
-        right.className = "footer-right";
-        right.innerHTML = `Total: ${formatMinutes(
-          p.totalSeconds
-        )}m<br/><span>${p.tasks.length} task(s)</span>`;
-
-        footer.appendChild(left);
-        footer.appendChild(right);
-
-        // TASKS PANEL
-        const taskPanel = document.createElement("div");
-        taskPanel.className = "tasks-panel";
-
-        const tHeader = document.createElement("div");
-        tHeader.className = "tasks-header";
-        const tTitle = document.createElement("div");
-        tTitle.className = "tasks-title";
-        tTitle.textContent = "Tasks & Effort";
-
-        const tCount = document.createElement("div");
-        tCount.style.fontSize = "11px";
-        tCount.style.color = "var(--text-muted)";
-        tCount.textContent = `${p.tasks.length} item`;
-
-        tHeader.appendChild(tTitle);
-        tHeader.appendChild(tCount);
-
-        const addRow = document.createElement("div");
-        addRow.className = "task-add-row";
-        addRow.innerHTML = `
-          <input id="task_${p.id}" class="task-input" placeholder="Tên task…" />
-          <input id="est_${p.id}" class="task-input" style="width:80px" type="number" min="1" placeholder="Est (phút)" />
-          <button class="task-add-btn" onclick="addTask('${p.id}')">Add</button>
-        `;
-
-        taskPanel.appendChild(tHeader);
-        taskPanel.appendChild(addRow);
-
-        p.tasks.forEach((t) => {
-          const row = document.createElement("div");
-          row.className = "task-row";
-
-          const mainTask = document.createElement("div");
-          mainTask.className = "task-main";
-
-          const name = document.createElement("div");
-          name.className = "task-name";
-          name.textContent = t.name;
-
-          const metaTask = document.createElement("div");
-          metaTask.className = "task-meta";
-          metaTask.textContent = `Est ${formatMinutes(
-            t.effEst
-          )}m • Actual ${formatMinutes(t.effActual)}m`;
-
-          mainTask.appendChild(name);
-          mainTask.appendChild(metaTask);
-
-          const actions = document.createElement("div");
-          actions.className = "task-actions";
-
-          const delBtn = document.createElement("button");
-          delBtn.className = "task-delete";
-          delBtn.textContent = "Delete";
-          delBtn.onclick = () => deleteTask(p.id, t.id);
-
-          actions.appendChild(delBtn);
-
-          row.appendChild(mainTask);
-          row.appendChild(actions);
-
-          taskPanel.appendChild(row);
-        });
-
-        // Append all to card
-        card.appendChild(header);
-        card.appendChild(shell);
-        card.appendChild(footer);
-        card.appendChild(taskPanel);
-
-        container.appendChild(card);
-      });
-    }
-
-    async function fileToBase64(file) {
-      return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = (e) => resolve(e.target.result);
-        reader.readAsDataURL(file);
-      });
-    }
-
-    async function addProject() {
-      const nameInput = document.getElementById("pname");
-      const allocInput = document.getElementById("palloc");
-      const logoInput = document.getElementById("plogo");
-
-      const name = nameInput.value.trim();
-      const allocation = parseFloat(allocInput.value);
-
-      if (!name || isNaN(allocation) || allocation <= 0) {
-        alert("Vui lòng nhập tên dự án và % EF hợp lệ.");
-        return;
-      }
-
-      const allocatedSeconds = (allocation / 100) * BASE_SECONDS;
-      let logoBase64 = "";
-      if (logoInput.files[0]) {
-        logoBase64 = await fileToBase64(logoInput.files[0]);
-      }
-
-      const newProject = {
-        id: crypto.randomUUID(),
-        name,
-        allocation,
-        allocatedSeconds,
-        totalSeconds: allocatedSeconds,
-        remainingSeconds: allocatedSeconds,
-        logo: logoBase64,
-        tasks: [],
-        _lastTick: null,
-      };
-
-      data.push(newProject);
-      nameInput.value = "";
-      allocInput.value = "";
-      logoInput.value = "";
-
-      saveData();
-      render();
-    }
-
-    function startProject(projectId) {
-      const now = Date.now();
-      activeProjectId = projectId;
-
-      data.forEach((p) => {
-        if (p.id === projectId) {
-          p._lastTick = now;
-        } else {
-          p._lastTick = null;
-        }
-      });
-
-      saveData();
-      render();
-    }
-
-    function deleteProject(projectId) {
-      if (!confirm("Xóa project này và toàn bộ task & log?")) return;
-      data = data.filter((p) => p.id !== projectId);
-      if (activeProjectId === projectId) {
-        activeProjectId = null;
-      }
-      saveData();
-      render();
-    }
-
-    function addTask(projectId) {
-      const nameInput = document.getElementById(`task_${projectId}`);
-      const estInput = document.getElementById(`est_${projectId}`);
-      const name = nameInput.value.trim();
-      const estMin = parseFloat(estInput.value);
-
-      if (!name || isNaN(estMin) || estMin <= 0) return;
-
-      const project = data.find((p) => p.id === projectId);
-      if (!project) return;
-
-      project.tasks.push({
-        id: crypto.randomUUID(),
-        name,
-        effEst: estMin * 60,
-        effActual: 0,
-      });
-
-      nameInput.value = "";
-      estInput.value = "";
-
-      saveData();
-      render();
-    }
-
-    function deleteTask(projectId, taskId) {
-      const project = data.find((p) => p.id === projectId);
-      if (!project) return;
-      project.tasks = project.tasks.filter((t) => t.id !== taskId);
-      saveData();
-      render();
-    }
-
-    // Timer tick: update remaining + distribute effort to last task
-    setInterval(() => {
-      if (!activeProjectId) return;
-      const now = Date.now();
-      const project = data.find((p) => p.id === activeProjectId);
-      if (!project) return;
-
-      if (!project._lastTick) {
-        project._lastTick = now;
-        return;
-      }
-
-      const delta = (now - project._lastTick) / 1000;
-      if (delta < 0.5) return;
-
-      project._lastTick = now;
-      project.remainingSeconds -= delta;
-      if (project.remainingSeconds < 0) {
-        project.remainingSeconds = 0;
-        activeProjectId = null;
-      }
-
-      if (project.tasks.length) {
-        const activeTask = project.tasks[project.tasks.length - 1];
-        activeTask.effActual += delta;
-      }
-
-      saveData();
-      render();
-    }, 750);
-
-    // CSV export
-    function exportCSV() {
-      const rows = [
-        "Project,Task,Type,EF Est (min),EF Actual (min)",
-      ];
-
-      data.forEach((p) => {
-        const type = p.totalSeconds > p.allocatedSeconds ? "OT" : "Formal";
-        if (!p.tasks.length) {
-          rows.push(
-            `${p.name},(no task),${type},0,${formatMinutes(
-              projectUsedSeconds(p)
-            )}`
-          );
-        } else {
-          p.tasks.forEach((t) => {
-            rows.push(
-              [
-                p.name,
-                t.name,
-                type,
-                formatMinutes(t.effEst),
-                formatMinutes(t.effActual),
-              ].join(",")
-            );
-          });
-        }
-      });
-
-      const blob = new Blob([rows.join("\n")], { type: "text/csv" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "ef_report.csv";
-      a.click();
-      URL.revokeObjectURL(url);
-    }
-
-    render();
-  </script>
 </body>
 </html>

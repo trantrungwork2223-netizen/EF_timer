@@ -561,8 +561,8 @@
 
     // ---------- Add task ----------
     function addTask(projectId) {
-      const nameInput = document.getElementById(`task_${projectId}`);
-      const estInput = document.getElementById(`est_${projectId}`);
+      const nameInput = document.querySelector(`#task_${projectId}`);
+      const estInput = document.querySelector(`#est_${projectId}`);
 
       const name = nameInput.value.trim();
       const estMin = parseFloat(estInput.value);
@@ -802,64 +802,78 @@
         footer.appendChild(leftButtons);
         footer.appendChild(rightInfo);
 
-        const tasks = document.createElement("div");
-        tasks.className = "tasks";
+       // ==== TASK UI FIX ====
+const tasks = document.createElement("div");
+tasks.className = "tasks";
 
-        const tHeader = document.createElement("div");
-        tHeader.className = "tasks-header";
-        tHeader.innerHTML = `<span>Tasks</span><span>${p.tasks.length} item</span>`;
+// Header
+const tHeader = document.createElement("div");
+tHeader.className = "tasks-header";
+tHeader.innerHTML = `<span>Tasks</span><span>${p.tasks.length} item</span>`;
+tasks.appendChild(tHeader);
 
-        const addRow = document.createElement("div");
-        addRow.className = "task-add-row";
-        addRow.innerHTML = `
-          <input id="task_${p.id}" type="text" placeholder="Tên task..." />
-          <input id="est_${p.id}" type="number" placeholder="Est (phút)" style="max-width:100px" />
-          <button class="btn-green" onclick="addTask('${p.id}')">+</button>
-        `;
+// Add task input row
+const addRow = document.createElement("div");
+addRow.className = "task-add-row";
 
-        tasks.appendChild(tHeader);
-        tasks.appendChild(addRow);
+const taskInput = document.createElement("input");
+taskInput.placeholder = "Tên task...";
+taskInput.style.flex = "2";
+taskInput.id = `task_${p.id}`;
 
-        p.tasks.forEach((t) => {
-          const row = document.createElement("div");
-          row.className = "task-row";
+const estInput = document.createElement("input");
+estInput.placeholder = "Est (phút)";
+estInput.type = "number";
+estInput.style.flex = "1";
+estInput.id = `est_${p.id}`;
 
-          const mainTask = document.createElement("div");
-          mainTask.className = "task-main";
+const addBtn = document.createElement("button");
+addBtn.className = "btn-green";
+addBtn.textContent = "+";
+addBtn.onclick = () => addTask(p.id);
 
-          const nameTask = document.createElement("div");
-          nameTask.className = "task-name";
-          nameTask.textContent = t.name;
+addRow.appendChild(taskInput);
+addRow.appendChild(estInput);
+addRow.appendChild(addBtn);
 
-          const metaTask = document.createElement("div");
-          metaTask.className = "task-meta";
-          metaTask.textContent = `Est ${minutes(
-            t.effEst
-          )}m • Actual ${minutes(t.effActual)}m`;
+tasks.appendChild(addRow);
 
-          mainTask.appendChild(nameTask);
-          mainTask.appendChild(metaTask);
+// Existing tasks list
+p.tasks.forEach((t) => {
+  const row = document.createElement("div");
+  row.className = "task-row";
 
-          const actions = document.createElement("div");
-          actions.className = "task-actions";
+  const mainTask = document.createElement("div");
+  mainTask.className = "task-main";
 
-          const delTaskBtn = document.createElement("button");
-          delTaskBtn.className = "btn-red";
-          delTaskBtn.textContent = "Del";
-          delTaskBtn.onclick = () => deleteTask(p.id, t.id);
+  const nameTask = document.createElement("div");
+  nameTask.className = "task-name";
+  nameTask.textContent = t.name;
 
-          actions.appendChild(delTaskBtn);
+  const metaTask = document.createElement("div");
+  metaTask.className = "task-meta";
+  metaTask.textContent = `Est ${minutes(t.effEst)}m · Actual ${minutes(t.effActual)}m`;
 
-          row.appendChild(mainTask);
-          row.appendChild(actions);
+  mainTask.appendChild(nameTask);
+  mainTask.appendChild(metaTask);
 
-          tasks.appendChild(row);
-        });
+  const actions = document.createElement("div");
+  actions.className = "task-actions";
 
-        card.appendChild(header);
-        card.appendChild(timerBox);
-        card.appendChild(footer);
-        card.appendChild(tasks);
+  const delTaskBtn = document.createElement("button");
+  delTaskBtn.className = "btn-red";
+  delTaskBtn.textContent = "Del";
+  delTaskBtn.onclick = () => deleteTask(p.id, t.id);
+
+  actions.appendChild(delTaskBtn);
+
+  row.appendChild(mainTask);
+  row.appendChild(actions);
+
+  tasks.appendChild(row);
+});
+
+card.appendChild(tasks);
 
         container.appendChild(card);
       });
@@ -869,3 +883,4 @@
   </script>
 </body>
 </html>
+
